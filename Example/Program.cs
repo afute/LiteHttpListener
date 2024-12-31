@@ -12,7 +12,9 @@ public static class ExampleServiceR1
     [LiteRoute(LiteMethod.Get, "/index")]
     public static async Task Get1(LiteContext context, RouteData routeData)
     {
-        var data = "wow"u8.ToArray();
+        string? name = null;
+        routeData.Query?.TryGetValue("name", out name);
+        var data = System.Text.Encoding.UTF8.GetBytes("wow" + ":" + name);
         var zipData = await CompressionHelper.GZipCompressAsync(data);
         context.Response.StatusCode = 200;
         context.Response.ContentLength64 = zipData.Length;
