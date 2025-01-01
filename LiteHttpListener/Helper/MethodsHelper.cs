@@ -2,20 +2,20 @@
 
 namespace LiteHttpListener.Helper;
 
-public static class LiteMethodHelper
+public static class MethodsHelper
 {
-    public static LiteMethod GetLiteMethod(string method)
+    public static Methods GetMethodEnum(string method)
     {
         const StringComparison comparison = StringComparison.OrdinalIgnoreCase;
         
         // ReSharper disable once LoopCanBeConvertedToQuery
-        foreach (var value in Enum.GetValues<LiteMethod>())
+        foreach (var value in Enum.GetValues<Methods>())
         {
             if (method.Equals(value.ToString(), comparison))
             {
                 return value;
             }
         }
-        return 0;
+        return default;
     }
 }

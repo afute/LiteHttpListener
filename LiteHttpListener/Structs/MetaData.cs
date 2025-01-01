@@ -8,7 +8,7 @@ public readonly struct MetaData(MethodInfo methodInfo)
     public T? GetMeta<T>(string key)
     {
         var metaData = methodInfo
-            .GetCustomAttributes<LiteRouteMetaAttribute<T>>()
+            .GetCustomAttributes<RouteMetaAttribute<T>>()
             .FirstOrDefault(x => x.Key == key);
         return metaData == null ? default : metaData.Value;
     }

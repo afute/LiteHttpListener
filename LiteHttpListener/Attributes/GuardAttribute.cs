@@ -3,7 +3,7 @@
 namespace LiteHttpListener.Attributes;
 
 [AttributeUsage(AttributeTargets.Method)]
-public class LiteListenerGuardAttribute(LiteGuard guard) : Attribute
+public class GuardAttribute(Guards guards) : Attribute
 {
-    public readonly LiteGuard Guard = guard;
+    public readonly Guards Guards = guards;
 }

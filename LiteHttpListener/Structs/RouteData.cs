@@ -1,18 +1,18 @@
-﻿using LiteHttpListener.Delegates;
-using LiteHttpListener.Enums;
+﻿namespace LiteHttpListener.Structs;
 
-namespace LiteHttpListener.Structs;
+using RouteParameters = IReadOnlyDictionary<string, string>;
 
-public readonly struct RouteData
+public readonly struct RouteData(RouteParameters? parameters, MetaData metaData)
 {
-    public readonly string RawMethod { get; init; }
-    public required string RawPath { get; init; }
+    public string? this[string key]
+    {
+        get
+        {
+            if (parameters is null) return null;
+            parameters.TryGetValue(key, out var value);
+            return value;
+        }
+    }
     
-    public required LiteMethod Method {get; init;}
-    
-    public required string Path {get; init;}
-    public required MetaData Meta { get; init; }
-    
-    public required IReadOnlyDictionary<string, string>? Param {get; init;}
-    public required IReadOnlyDictionary<string, string?>? Query {get; init;}
+    public readonly MetaData Meta = metaData;
 }

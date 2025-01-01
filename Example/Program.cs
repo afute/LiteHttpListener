@@ -1,102 +1,113 @@
-﻿using LiteHttpListener;
+﻿using System.Net;
+using LiteHttpListener;
 using LiteHttpListener.Attributes;
 using LiteHttpListener.Enums;
+using LiteHttpListener.Extensions;
 using LiteHttpListener.Helper;
 using LiteHttpListener.Structs;
 
 namespace Example;
 
+[Route("/")]
+[Route("/example")]
 public static class ExampleServiceR1
 {
-    [LiteRoute(LiteMethod.Get, "/")]
-    [LiteRoute(LiteMethod.Get, "/index")]
-    public static async Task Get1(LiteContext context, RouteData routeData)
+    [Route(Methods.Get, "/")]
+    [Route(Methods.Get, "index")]
+    public static Task Get1(HttpListenerContext context, RouteData routeData)
     {
-        string? name = null;
-        routeData.Query?.TryGetValue("name", out name);
-        var data = System.Text.Encoding.UTF8.GetBytes("wow" + ":" + name);
-        var zipData = await CompressionHelper.GZipCompressAsync(data);
-        context.Response.StatusCode = 200;
-        context.Response.ContentLength64 = zipData.Length;
-        context.Response.ContentType = "text/plain";
-        context.Response.Headers.Add("Content-Encoding", "gzip");
-        await context.Response.OutputStream.WriteAsync(zipData);
-    }
-
-    [LiteRoute(LiteMethod.Get, "/error")]
-    [LiteRouteMeta<string>("metaKey", "this is route meta value")]
-    public static Task Error(LiteContext context, RouteData routeData)
-    {
-        throw new Exception(routeData.Meta.GetMeta<string>("metaKey"));
-    }
-}
-
-[LiteRouteBase("/test")]
-[LiteRouteBase("/test2")]
-public class ExampleServiceR2
-{
-    private int _count;
-
-    [LiteRoute(LiteMethod.Get, "/add/{name}")]
-    public async Task AddCount(LiteContext context, RouteData routeData)
-    {
-        _count++;
-        var name = routeData.Param?["name"];
-        var data = System.Text.Encoding.UTF8.GetBytes($"{name}:{_count}");
-        var zipData = await CompressionHelper.GZipCompressAsync(data);
-        context.Response.StatusCode = 200;
-        context.Response.ContentLength64 = zipData.Length;
-        context.Response.ContentType = "text/plain";
-        context.Response.Headers.Add("Content-Encoding", "gzip");
-        await context.Response.OutputStream.WriteAsync(zipData);
-    }
-}
-
-public static class Guard
-{
-    [LiteListenerGuard(LiteGuard.NotFoundRoute)]
-    public static Task NotFoundRoute(LiteContext context)
-    {
-        context.Response.StatusCode = 404;
-        Console.WriteLine($"{context.Request.RawUrl} not found");
+        context.Response.StatusCode = 302;
+        context.Response.RedirectLocation = "/test/redirect";
         return Task.CompletedTask;
     }
     
-    [LiteListenerGuard(LiteGuard.EveryRequestBefore)]
-    public static Task<bool> EveryRequestBefore(LiteContext context)
+    [Route(Methods.Get, "/test/{data}")]
+    [RouteMeta<string>("metaKey", "this is route meta value")]
+    public static async Task Test(HttpListenerContext context, RouteData routeData)
+    {
+        var metaValue = routeData.Meta.GetMeta<string>("metaKey");
+        var query = context.GetQuery();
+        var text = "meta:" + metaValue + "\n";
+        text += "route data:" + routeData["data"] + "\nquery:";
+        text = query.Aggregate(text, (c, p) => c + p.Key + "=" + p.Value + ",");
+
+        var data = System.Text.Encoding.UTF8.GetBytes(text);
+        var zipData = await CompressionHelper.GZipCompressAsync(data);
+        context.Response.ContentType = "text/plain; charset=utf-8";
+        context.Response.ContentLength64 = zipData.Length;
+        context.Response.StatusCode = 200;
+        context.Response.Headers.Add("Content-Encoding", "gzip");
+        await context.Response.OutputStream.WriteAsync(zipData);
+    }
+}
+
+[Route("/error")]
+public class ExampleServiceR2
+{
+    private int _count;
+    
+    [Route(Methods.All, "/")]
+    [Route(Methods.All, "/error")]
+    public Task Error(HttpListenerContext context, RouteData routeData)
+    {
+        _count++;
+        throw new Exception($"exception count:{_count}");
+    }
+}
+
+public static class ExampleServiceGuard
+{
+    [Guard(Guards.StartListenerBefore)]
+    public static Task StartListener(HttpListener listener)
+    {
+        foreach (var listenerPrefix in listener.Prefixes)
+        {
+            Console.WriteLine($"Listening on {listenerPrefix}");
+        }
+        return Task.CompletedTask;
+    }
+
+    [Guard(Guards.NotFoundRoute)]
+    public static async Task NotFoundRoute(HttpListenerContext context)
+    {
+        var data = "Not Found"u8.ToArray();
+        var zipData = await CompressionHelper.GZipCompressAsync(data);
+        context.Response.ContentType = "text/plain; charset=utf-8";
+        context.Response.ContentLength64 = zipData.Length;
+        context.Response.StatusCode = 404;
+        context.Response.Headers.Add("Content-Encoding", "gzip");
+        await context.Response.OutputStream.WriteAsync(zipData);
+    }
+
+    [Guard(Guards.ServiceException)]
+    public static async Task ServiceException(HttpListenerContext context, Exception exception)
+    {
+        var data = System.Text.Encoding.UTF8.GetBytes(exception.Message);
+        var zipData = await CompressionHelper.GZipCompressAsync(data);
+        context.Response.ContentType = "text/plain; charset=utf-8";
+        context.Response.ContentLength64 = zipData.Length;
+        context.Response.StatusCode = 500;
+        context.Response.Headers.Add("Content-Encoding", "gzip");
+        await context.Response.OutputStream.WriteAsync(zipData);
+    }
+
+    [Guard(Guards.RequestBefore)]
+    public static Task<bool> RequestBefore(HttpListenerContext context)
     {
         Console.WriteLine($"{context.Request.HttpMethod} {context.Request.RawUrl}");
         return Task.FromResult(true);
     }
-    
-    [LiteListenerGuard(LiteGuard.ServiceException)]
-    public static async Task ServiceException(LiteContext context, Exception exception)
-    {
-        var data = System.Text.Encoding.UTF8.GetBytes(exception.Message);
-        var zipData = await CompressionHelper.GZipCompressAsync(data);
-        context.Response.StatusCode = 500;
-        context.Response.ContentLength64 = zipData.Length;
-        context.Response.ContentType = "text/plain";
-        context.Response.Headers.Add("Content-Encoding", "gzip");
-        await context.Response.OutputStream.WriteAsync(zipData);
-        Console.WriteLine($"{exception.Message}");
-    }
 }
 
-public static class Program
+
+public static partial class Program
 {
     public static async Task Main(string[] args)
     {
-        const string prefixes = "http://127.0.0.1:5000/";
-        var service = new LiteHttpService(prefixes);
-        
+        var service = new LiteHttpService("http://localhost:5000/");
         service.RegisterRoute(typeof(ExampleServiceR1));
         service.RegisterRoute(new ExampleServiceR2());
-        
-        service.RegisterGuard(typeof(Guard));
-
-        Console.WriteLine($"Listening on {prefixes}");
-
+        service.RegisterGuard(typeof(ExampleServiceGuard));
         await service.StartListener();
     }
 }
