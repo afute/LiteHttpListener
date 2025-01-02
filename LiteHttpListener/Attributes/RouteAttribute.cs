@@ -42,13 +42,13 @@ public sealed partial class RouteAttribute : Attribute
     
     public RouteAttribute(string method, string route)
     {
-        Method = MethodsHelper.GetMethodEnum(method);
+        Method = Enum.Parse<Methods>(method, true);
         Route = (RouteRaw)route;
     }
     
     public RouteAttribute(string method, RouteRaw route)
     {
-        Method = MethodsHelper.GetMethodEnum(method);
+        Method = Enum.Parse<Methods>(method, true);
         Route = route;
     }
     

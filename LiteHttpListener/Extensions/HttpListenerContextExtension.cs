@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Web;
 using LiteHttpListener.Enums;
-using LiteHttpListener.Helper;
 using LiteHttpListener.Structs;
 
 namespace LiteHttpListener.Extensions;
@@ -25,6 +24,6 @@ public static class HttpListenerContextExtension
 
     public static Methods GetMethod(this HttpListenerContext context)
     {
-        return MethodsHelper.GetMethodEnum(context.Request.HttpMethod);
+        return Enum.Parse<Methods>(context.Request.HttpMethod, true);
     }
 }
