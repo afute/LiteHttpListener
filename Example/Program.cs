@@ -104,13 +104,10 @@ public static partial class Program
 {
     public static async Task Main(string[] args)
     {
-        // var service = new LiteHttpService("http://localhost:5000/");
-        // service.RegisterRoute(typeof(ExampleServiceR1));
-        // service.RegisterRoute(new ExampleServiceR2());
-        // service.RegisterGuard(typeof(ExampleServiceGuard));
-        // await service.StartListener();
-
-        var d = Enum.Parse<Methods>("GET", true);
-        Console.WriteLine(d);
+        var service = new LiteHttpService("http://localhost:5000/");
+        service.RegisterRoute(typeof(ExampleServiceR1));
+        service.RegisterRoute(new ExampleServiceR2());
+        service.RegisterGuard(typeof(ExampleServiceGuard));
+        await service.StartListener();
     }
 }
